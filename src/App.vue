@@ -29,6 +29,9 @@ li {
 .logo {
   width: 60px;
 }
+.float-r {
+  float: right;
+}
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;

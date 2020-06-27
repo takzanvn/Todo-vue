@@ -2,18 +2,29 @@
     <div>
         Todo List goes here
         <div class="todo-app">
-            <input type="text" class="todo-input" name="" v-model="todoItem" @keyup.enter="addTodo" placeholder="What needs to be done">
-            <ul>
-                <li v-for="(todo, i) in todoList" :key="i">
-                    <input type="checkbox" name="todo[]" v-bind:id="'todoItem_' + todo.id" v-model="todo.completed">
+            <input class="form-control todo-input" type="text" name="" v-model="todoItem" @keyup.enter="addTodo" placeholder="What needs to be done">
+            <div class="todo-extra">
+                <input type="checkbox" id="check-all" class="check-all" @change="checkAll()" :checked="checkAllFlag">
+                <label for="check-all">Check All</label>
+                <span class="todo-remaining float-r">{{ remaining }} item<span v-show="remaining">s</span> left</span>
+                <div class="todo-sub-extra">
+                    <button class="btn-filter" :class="{active: this.filtered == 'all'}" @click="filter('all')">All</button>
+                    <button class="btn-filter" :class="{active: this.filtered == 'active'}" @click="filter('active')">Active</button>
+                    <button class="btn-filter" :class="{active: this.filtered == 'completed'}" @click="filter('completed')">Completed</button>
+                    <button class="btn-filter float-r" @click="clearCompleted()" v-show="countChecked > 0">Clear completed</button>
+                </div>
+            </div>
+            <transition-group enter-active-class="fade-in-up" leave-active-class="fade-out-down">
+                <div class="todo-item" v-for="(todo, i) in todoFiltered" :key="i + 0">
+                    <input type="checkbox" name="todo[]" v-bind:id="'todoItem_' + todo.id" v-model="todo.completed" @change="refreshFilter()">
                     <div class="todo-title-wrapper">
                         <label v-bind:for="'todoItem_' + todo.id" v-if="!todo.editing" @dblclick="editTodo(todo)" :class="{ checked: todo.completed }">{{ todo.title }}</label>
                         <input type="text" class="form-control" v-model="todo.title" v-else @blur="doneEdit(todo)" v-focus 
                         @keyup.enter="doneEdit(todo)" @keyup.esc="cancelEdit(todo)">
                     </div>
                     <span class="close-button" @click="removeTodo(i)">&times;</span>
-                </li>
-            </ul>
+                </div>
+            </transition-group>
         </div>
     </div>
 </template>
@@ -23,14 +34,14 @@ export default {
     name: 'TodoList',
     data() {
         return {
-            todoItem: "",
             todoList: [{
                 title: "Finish toto list by Vuejs",
                 completed: false,
                 id: 0,
                 editing: false,
             }],
-            beforeEditCache: ''
+            beforeEditCache: '',
+            filtered: 'all'
         }
     },
     methods: {
@@ -62,6 +73,39 @@ export default {
         cancelEdit(el) {
             el.title = this.beforeEditCache
             el.editing = false
+        },
+        checkAll() {
+            this.todoList.forEach(todo => todo.completed = event.target.checked)
+        },
+        filter(input) {
+            return this.filtered = input
+        },
+        refreshFilter() {
+            return this.todoFiltered
+        },
+        clearCompleted() {
+            return this.todoList = this.todoList.filter(todo => !todo.completed)
+        }
+    },
+    computed: {
+        remaining() {
+            return this.todoList.filter(todo => !todo.completed).length
+        },
+        countChecked() {
+            return this.todoList.length - this.remaining
+        },
+        checkAllFlag() {
+            if (this.todoList.length == 0) return false
+            if (this.remaining == 0) return true
+        },
+        todoFiltered() {
+            if (this.filtered == 'active') {
+                return this.todoList.filter(todo => !todo.completed)
+            } else if (this.filtered == 'completed') {
+                return this.todoList.filter(todo => todo.completed)
+            } else {
+                return this.todoList
+            }
         }
     },
     directives: {
@@ -79,23 +123,34 @@ $input_fontsize: 18px;
 
 .todo-app {
     text-align: left;
+    label {
+        cursor: pointer;
+    }
 }
-input[type=text], .form-control {
+.form-control {
     width: 100%;
     padding: 10px 15px;
-    border: 1px solid #41b783;
+    border: 1px solid #666;
     line-height: 17px;
+    &:focus {
+        border-color: #41b783
+    }
 }
 .todo-input {
     margin: 20px auto;
     font-size: $input_fontsize;
 }
+.todo-extra {
+    border-bottom: 1px solid #DDD;
+    padding-bottom: 10px;
+}
+.todo-sub-extra {
+    margin-top: 10px;
+}
 .todo-app {
-    ul li {
+    .todo-item {
         margin: 3px auto 0;
         min-height: 45px;
-    }
-    li {
         display: flex;
         align-items: center;
     }
@@ -129,5 +184,31 @@ input[type=text], .form-control {
             color: #222;
         }
     }
+}
+button[class^=btn]{
+    padding: 3px 6px;
+    background-color: #DDD;
+    border-radius: 3px;
+    cursor: pointer;
+    &.active {
+        background: lightgreen;
+    }
+}
+
+@keyframes todoItem {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.fade-in-up {
+    animation: todoItem .4s ease-out forwards;
+}
+.fade-out-down {
+    animation: todoItem .4s ease-in reverse;
 }
 </style>
